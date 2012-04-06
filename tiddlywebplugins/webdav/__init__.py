@@ -2,9 +2,11 @@
 WebDAV extension for TiddlyWeb
 """
 
-from email.utils import formatdate
+from __future__ import absolute_import
 
 from tiddlywebplugins.utils import replace_handler
+
+from .util import rfc1123Time, merge
 
 
 DEFAULT_HEADERS = {
@@ -19,33 +21,10 @@ def init(config):
 
 
 def root(environ, start_response):
-    headers = _merge({}, DEFAULT_HEADERS, {
+    headers = merge({}, DEFAULT_HEADERS, {
         "Allow": "OPTIONS, HEAD, GET, PROPFIND", # XXX: lies? -- TODO: they say OS X Finder requires LOCK, even if faked
         "Content-Length": "0",
         "Date": rfc1123Time()
     })
     start_response("200 OK", headers.items())
     return ""
-
-
-def rfc1123Time(secs=None):
-    """
-    returns seconds in RFC 1123 date/time format
-
-    if `secs` is None, the current date is used
-
-    (adapted from WsgiDAV; http://code.google.com/p/wsgidav/)
-    """
-    return formatdate(timeval=secs, localtime=False, usegmt=True)
-
-
-def _merge(target, *args):
-    """
-    shallowly merges dictionaries into `target`
-
-    NB: this goes somewhat against Python conventions by modifying and also
-    returning `target` (rather than `None`; cf. `sort`)
-    """
-    for dic in args:
-        target.update(dic)
-    return target
