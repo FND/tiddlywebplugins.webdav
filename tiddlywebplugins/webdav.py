@@ -1,3 +1,7 @@
+"""
+WebDAV extension for TiddlyWeb
+"""
+
 from tiddlywebplugins.utils import replace_handler
 
 
