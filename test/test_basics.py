@@ -1,9 +1,10 @@
 import httplib2
 
+from wsgi_intercept import httplib2_intercept, add_wsgi_intercept
+from pytest import mark
+
 from tiddlyweb.config import config
 from tiddlyweb.web import serve
-
-from wsgi_intercept import httplib2_intercept, add_wsgi_intercept
 
 
 HOSTNAME = "0.0.0.0"
@@ -19,10 +20,22 @@ def setup_module(module):
     add_wsgi_intercept(HOSTNAME, PORT, _app)
 
 
+@mark.xfail
+def test_nondestructive():
+    http = httplib2.Http()
+
+    # ensure original root is not overridden
+    response, content = http.request("%s/" % HOST, "GET")
+    assert response["status"] == "200"
+
+
 def test_handshake():
     http = httplib2.Http()
+
     response, content = http.request("%s/" % HOST, "OPTIONS")
-    assert response["status"] == "200", content
+    assert response["status"] == "200"
+    assert response["dav"] == "1"
+    assert response["ms-author-via"] == "DAV"
 
 
 def _app():
