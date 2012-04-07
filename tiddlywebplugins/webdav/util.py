@@ -1,4 +1,70 @@
+from lxml import etree
 from email.utils import formatdate
+
+
+def dict2xml(dic, text_node="_text", attrib_prefix="@"):
+    """
+    generates an XML string from a dictionary
+
+    if a value is a string, it will be used as
+    * a text node on the current node if the key is `text_node`
+    * an attribute on the current node if the key starts with `attrib_prefix`
+    * a text node on a new sub-node otherwise
+
+    >>> data = {
+        "date": "2012-03-25",
+        "source": {
+            "@uri": "example.org",
+            "_text": "Example"
+        },
+        "article": [{
+            "title": "lipsum"
+        }, {
+            "title": "hello world",
+            "author": {
+                "name": "John Doe",
+                "e-mail": "jdoe@example.org"
+            }
+        }]
+    }
+    >>> dict2xml(data)
+    <date>2012-03-25</date>
+    <source uri="example.org">Example</source>
+    <article>
+        <title>lipsum</title>
+    </article>
+    <article>
+        <author>
+          <e-mail>jdoe@example.org</e-mail>
+          <name>John Doe</name>
+        </author>
+        <title>hello world</title>
+    </article>
+    """
+    def process_node(dic, parent):
+        for tag, value in dic.items():
+            if value is None:
+                etree.SubElement(parent, tag)
+            elif isinstance(value, basestring):
+                if tag == text_node:
+                    parent.text = value
+                elif tag.startswith(attrib_prefix):
+                    parent.set(tag[1:], value)
+                else:
+                    node = etree.SubElement(parent, tag)
+                    node.text = value
+            elif hasattr(value, "items"): # dictionary
+                node = etree.SubElement(parent, tag)
+                process_node(value, node)
+            else: # list
+                for item in value:
+                    node = etree.SubElement(parent, tag)
+                    process_node(item, node)
+
+    root = etree.Element("root")
+    process_node(dic, root)
+
+    return "\n".join(etree.tostring(node) for node in root.getchildren())
 
 
 def rfc1123Time(secs=None):

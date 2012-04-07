@@ -19,23 +19,28 @@ def setup_module(module):
     httplib2_intercept.install()
     add_wsgi_intercept(HOSTNAME, PORT, _app)
 
+    module.client = httplib2.Http()
+
 
 @mark.xfail
 def test_nondestructive():
-    http = httplib2.Http()
-
     # ensure original root is not overridden
-    response, content = http.request("%s/" % HOST, "GET")
+    response, content = client.request("%s/" % HOST, "GET")
     assert response["status"] == "200"
 
 
 def test_handshake():
-    http = httplib2.Http()
-
-    response, content = http.request("%s/" % HOST, "OPTIONS")
+    response, content = client.request("%s/" % HOST, "OPTIONS")
     assert response["status"] == "200"
     assert response["dav"] == "1"
     assert response["ms-author-via"] == "DAV"
+
+
+def test_directory_listing():
+    response, content = client.request("%s/" % HOST, "PROPFIND")
+    assert response["status"] == "200"
+    assert response["content-type"] == "application/xml"
+    assert "<?xml " in content
 
 
 def _app():
