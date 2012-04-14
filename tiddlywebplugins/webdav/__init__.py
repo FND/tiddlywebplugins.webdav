@@ -45,20 +45,10 @@ def index(environ, start_response):
         uris = ["%s/%s" % (uri, entity) for entity in ["default", "foo"]] # TODO: generate automatically
     uris.insert(0, uri)
 
-    properties = {
-        "resourcetype": None,
-        "creationdate": "2012-03-25T07:25:06Z", # TODO: use created
-        "getlastmodified": "Sun, 25 Mar 2012 07:25:06 GMT", # TODO: use modified
-        "getetag": None, # TODO
-        "getcontentlength": None, # TODO?
-        "{http://apache.org/dav/props/}executable": None # TODO: declare namespace at root level
-    }
-
     doc = {
         "multistatus": {
             "@xmlns": "DAV:",
-            "response": (_prop_response(uri, properties, True)
-                    for uri in uris)
+            "response": (_multistatus_response(uri) for uri in uris)
         }
     }
     doc = """<?xml version="1.0" encoding="utf-8" ?>\n%s""" % dict2xml(doc)
@@ -75,15 +65,26 @@ def index(environ, start_response):
     return doc
 
 
-def _prop_response(uri, properties, collection=False):
-    collection = True # XXX: DEBUG
-    if collection:
-        properties["resourcetype"] = "collection" # XXX: modifying mutable argument
-
+def _multistatus_response(uri): # TODO: support for collections?
+    """
+    generate XML for a single multistatus response
+    """
+    supported_methods = ["OPTIONS", "HEAD", "GET", "PUT", "DELETE", "PROPFIND"] # XXX: lies?
     return OrderedDict([ # apparently order matters, at least to some clients
         ("href", uri),
-        ("propstat", [{
-            "status": "HTTP/1.1 200 OK",
-            "prop": properties
-        }])
+        ("propstat", {
+            "status": "HTTP/1.1 200 OK", # XXX: if order matters, this should go below `prop`
+            "prop": {
+                "supported-live-property-set": {
+                    "supported-live-property": {
+                        "prop": { # TODO: support for other properties?
+                            "ordering-type": None # XXX: is this actually desirable?
+                        }
+                    }
+                },
+                "supported-method-set": { # TODO: inefficient; use reference to avoid duplication
+                    "supported-method": ({ "@name": meth } for meth in supported_methods)
+                }
+            }
+        })
     ])
