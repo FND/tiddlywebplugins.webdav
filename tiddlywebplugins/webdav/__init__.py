@@ -48,7 +48,7 @@ def index(environ, start_response):
     doc = {
         "multistatus": {
             "@xmlns": "DAV:",
-            "response": (_multistatus_response(uri) for uri in uris)
+            "response": (_multistatus_response(uri, True) for uri in uris)
         }
     }
     doc = """<?xml version="1.0" encoding="utf-8" ?>\n%s""" % dict2xml(doc)
@@ -65,7 +65,7 @@ def index(environ, start_response):
     return doc
 
 
-def _multistatus_response(uri): # TODO: support for collections?
+def _multistatus_response(uri, collection=True):
     """
     generate XML for a single multistatus response
     """
@@ -75,6 +75,7 @@ def _multistatus_response(uri): # TODO: support for collections?
         ("propstat", {
             "status": "HTTP/1.1 200 OK", # XXX: if order matters, this should go below `prop`
             "prop": {
+                "resourcetype": "collection" if collection else None, # TODO: only add this element if non-empty?
                 "supported-live-property-set": {
                     "supported-live-property": {
                         "prop": { # TODO: support for other properties?
