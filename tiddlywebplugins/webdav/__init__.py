@@ -75,7 +75,7 @@ def index(environ, start_response):
         "Content-Type": "application/xml", # XXX: charset?
         "Content-Length": "%s" % len(doc)
     })
-    start_response("200 OK", headers.items())
+    start_response("207 Multi-Status", headers.items())
     return doc
 
 

@@ -38,7 +38,7 @@ def test_handshake():
 
 def test_directory_listing():
     response, content = client.request("%s/" % HOST, "PROPFIND")
-    assert response["status"] == "200"
+    assert response["status"] == "207"
     assert response["content-type"] == "application/xml"
     assert "<?xml " in content
 
