@@ -64,12 +64,8 @@ def index(environ, start_response):
     doc = """<?xml version="1.0" encoding="utf-8" ?>\n%s""" % dict2xml(doc)
 
     # XXX: DEBUG
-    print "=" * 80
-    from lxml import etree
-    from StringIO import StringIO
-    xml = etree.parse(StringIO(doc))
-    print etree.tostring(xml, pretty_print=True)
-    print "-" * 80
+    from .util import prettify
+    print "%s\n%s\n%s" % ("=" * 80, prettify(doc, "application/xml"), "-" * 80)
 
     headers = merge({}, DEFAULT_HEADERS, {
         "Content-Type": "application/xml", # XXX: charset?

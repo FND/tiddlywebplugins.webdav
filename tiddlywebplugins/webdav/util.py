@@ -67,6 +67,25 @@ def dict2xml(dic, text_node="_text", attrib_prefix="@"):
     return "\n".join(etree.tostring(node) for node in root.getchildren())
 
 
+def prettify(data, content_type):
+    """
+    pretty-print data based on content type
+    """
+    content_type = content_type.split(";")[0] # ignore charset
+
+    if content_type == "application/xml":
+        from lxml import etree
+        from StringIO import StringIO
+        xml = etree.parse(StringIO(data))
+        return etree.tostring(xml, pretty_print=True)
+        # alternative prettification
+        #from xml.dom import minidom
+        #from xml.parsers.expat import ExpatError
+        #xml = minidom.parseString(body).toprettyxml()
+    else:
+        return data # XXX: silent failure?
+
+
 def rfc1123Time(secs=None):
     """
     returns seconds in RFC 1123 date/time format
