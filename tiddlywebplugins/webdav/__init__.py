@@ -34,7 +34,7 @@ def handshake(environ, start_response): # TODO: rename
     WSGI application handling OPTIONS requests
     """
     headers = merge({}, DEFAULT_HEADERS, {
-        "Allow": "OPTIONS, HEAD, GET, PROPFIND", # XXX: lies? -- TODO: they say OS X Finder requires LOCK, even if faked
+        "Allow": ", ".join(environ["selector.methods"]), # TODO: they say OS X Finder requires LOCK, even if faked
         "Content-Length": "0",
         "Date": rfc1123Time()
     })
@@ -97,7 +97,7 @@ def _multistatus_response(uri, collection=True):
     """
     generate XML for a single multistatus response
     """
-    supported_methods = ["OPTIONS", "HEAD", "GET", "PUT", "DELETE", "PROPFIND"] # XXX: lies?
+    supported_methods = ["OPTIONS", "HEAD", "GET", "PUT", "DELETE", "PROPFIND"] # XXX: lies; use `selector.methods`
     return OrderedDict([ # apparently order matters, at least to some clients
         ("href", uri),
         ("propstat", {

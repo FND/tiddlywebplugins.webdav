@@ -31,10 +31,14 @@ def test_nondestructive():
 
 
 def test_handshake():
-    response, content = client.request("%s/" % HOST, "OPTIONS")
-    assert response["status"] == "200", content
-    assert response["dav"] == "1", content
-    assert response["ms-author-via"] == "DAV", content
+    for uri in ("/", "/bags", "/recipes"):
+        response, content = client.request("%s/" % HOST, "OPTIONS")
+        supported_methods = response["allow"].split(", ")
+        assert response["status"] == "200", content
+        assert response["dav"] == "1", content
+        assert response["ms-author-via"] == "DAV", content
+        assert len(supported_methods) > 1
+        assert "OPTIONS" in supported_methods
 
 
 def test_directory_listing():
