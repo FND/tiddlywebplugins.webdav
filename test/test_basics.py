@@ -41,6 +41,8 @@ def test_directory_listing():
     assert response["status"] == "207", content
     assert response["content-type"] == "application/xml", content
     assert "<?xml " in content
+    assert "<href>/bags</href>" in content
+    assert "<href>/recipes</href>" in content
 
 
 def _app():

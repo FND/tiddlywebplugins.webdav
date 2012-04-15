@@ -19,12 +19,18 @@ DEFAULT_HEADERS = {
 
 
 def init(config):
+    """
+    TiddlyWeb plugin initialization
+    """
     if "selector" in config: # system plugin
         replace_handler(config["selector"], "/", # XXX: we want to extend, not replace
-                { "OPTIONS": handshake, "PROPFIND": index })
+                { "OPTIONS": handshake, "PROPFIND": list_collection })
 
 
-def handshake(environ, start_response):
+def handshake(environ, start_response): # TODO: rename
+    """
+    WSGI application handling OPTIONS requests
+    """
     headers = merge({}, DEFAULT_HEADERS, {
         "Allow": "OPTIONS, HEAD, GET, PROPFIND", # XXX: lies? -- TODO: they say OS X Finder requires LOCK, even if faked
         "Content-Length": "0",
@@ -34,7 +40,10 @@ def handshake(environ, start_response):
     return ""
 
 
-def index(environ, start_response):
+def list_collection(environ, start_response):
+    """
+    WSGI application handling PROPFIND requests
+    """
     if environ.get("HTTP_DEPTH", "0") not in ("0", "1"):
         raise HTTP403("excessive depth requested")
 
