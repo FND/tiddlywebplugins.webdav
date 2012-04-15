@@ -79,17 +79,12 @@ def determine_entries(environ):
 
     descendant_candidates = { # XXX: hard-coded; ideally descendants should be determined via HATEOAS-y clues
         "/": ["/bags", "/recipes"],
-        "/bags": lambda uri: ("%s/%s" % (uri, entity) for entity in ["default", "alpha"]), # hard-coded samples
-        "/recipes": lambda uri: ("%s/%s" % (uri, entity) for entity in ["default", "omega"]) # hard-coded samples
+        "/bags": ("/bags/%s" % entity for entity in ["default", "alpha"]), # hard-coded samples
+        "/recipes": ("/recipes/%s" % entity for entity in ["default", "omega"]) # hard-coded samples
     }
-    # TODO: support server_prefix
+    # TODO: prepend server_prefix
 
-    descendants = descendant_candidates[current_route]
-    try:
-        descendants = descendants(current_uri)
-    except TypeError: # no callable
-        pass
-
+    descendants = list(descendant_candidates[current_route])
     return chain([current_uri], descendants)
 
 
