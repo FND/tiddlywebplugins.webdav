@@ -4,6 +4,7 @@ WebDAV extension for TiddlyWeb
 
 from __future__ import absolute_import
 
+from itertools import chain
 from collections import OrderedDict
 
 from tiddlyweb.web.http import HTTP403
@@ -23,8 +24,9 @@ def init(config):
     TiddlyWeb plugin initialization
     """
     if "selector" in config: # system plugin
-        replace_handler(config["selector"], "/", # XXX: we want to extend, not replace
-                { "OPTIONS": handshake, "PROPFIND": list_collection })
+        handlers = { "OPTIONS": handshake, "PROPFIND": list_collection }
+        for uri in ("/", "/bags", "/recipes"):
+            replace_handler(config["selector"], uri, handlers) # XXX: we want to extend, not replace
 
 
 def handshake(environ, start_response): # TODO: rename
@@ -47,17 +49,11 @@ def list_collection(environ, start_response):
     if environ.get("HTTP_DEPTH", "0") not in ("0", "1"):
         raise HTTP403("excessive depth requested")
 
-    uri = environ["selector.matches"][0] # XXX: srsly?
-    if uri == "/":
-        uris = ["/bags", "/recipes"] # TODO: generate automatically (e.g. to include extensions)
-    elif uri in ("/bags", "/recipes"):
-        uris = ["%s/%s" % (uri, entity) for entity in ["default", "foo"]] # TODO: generate automatically
-    uris.insert(0, uri)
 
     doc = {
         "multistatus": {
             "@xmlns": "DAV:",
-            "response": (_multistatus_response(uri, True) for uri in uris)
+            "response": (_multistatus_response(uri, True) for uri in determine_entries(environ))
         }
     }
     doc = """<?xml version="1.0" encoding="utf-8" ?>\n%s""" % dict2xml(doc)
@@ -72,6 +68,29 @@ def list_collection(environ, start_response):
     })
     start_response("207 Multi-Status", headers.items())
     return doc
+
+
+def determine_entries(environ):
+    """
+    returns descendant resources based on the WSGI environment
+    """
+    current_uri = environ["SCRIPT_NAME"] # XXX: don't we want PATH_INFO?
+    current_route = environ["selector.matches"][0]
+
+    descendant_candidates = { # XXX: hard-coded; ideally descendants should be determined via HATEOAS-y clues
+        "/": ["/bags", "/recipes"],
+        "/bags": lambda uri: ("%s/%s" % (uri, entity) for entity in ["default", "alpha"]), # hard-coded samples
+        "/recipes": lambda uri: ("%s/%s" % (uri, entity) for entity in ["default", "omega"]) # hard-coded samples
+    }
+    # TODO: support server_prefix
+
+    descendants = descendant_candidates[current_route]
+    try:
+        descendants = descendants(current_uri)
+    except TypeError: # no callable
+        pass
+
+    return chain([current_uri], descendants)
 
 
 def _multistatus_response(uri, collection=True):

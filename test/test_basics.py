@@ -24,9 +24,10 @@ def setup_module(module):
 
 @mark.xfail
 def test_nondestructive():
-    # ensure original root is not overridden
-    response, content = client.request("%s/" % HOST, "GET")
-    assert response["status"] == "200", content
+    # ensure original URI handlers are not overridden
+    for uri in ("/", "/bags", "/recipes"):
+        response, content = client.request(HOST + uri, "GET")
+        assert response["status"] == "200", content
 
 
 def test_handshake():
@@ -43,6 +44,20 @@ def test_directory_listing():
     assert "<?xml " in content
     assert "<href>/bags</href>" in content
     assert "<href>/recipes</href>" in content
+
+    response, content = client.request("%s/bags" % HOST, "PROPFIND")
+    assert response["status"] == "207", content
+    assert response["content-type"] == "application/xml", content
+    assert "<?xml " in content
+    assert "<href>/bags/default</href>" in content
+    assert "<href>/bags/alpha</href>" in content
+
+    response, content = client.request("%s/recipes" % HOST, "PROPFIND")
+    assert response["status"] == "207", content
+    assert response["content-type"] == "application/xml", content
+    assert "<?xml " in content
+    assert "<href>/recipes/default</href>" in content
+    assert "<href>/recipes/omega</href>" in content
 
 
 def _app():
