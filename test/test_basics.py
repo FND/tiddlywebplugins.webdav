@@ -49,6 +49,7 @@ def test_directory_listing():
     assert response["status"] == "207", content
     assert response["content-type"] == "application/xml", content
     assert "<?xml " in content
+    assert "<href>/</href>" in content # XXX: is this necessary/desirable?
     assert "<href>/bags</href>" in content
     assert "<href>/recipes</href>" in content
 
@@ -56,6 +57,7 @@ def test_directory_listing():
     assert response["status"] == "207", content
     assert response["content-type"] == "application/xml", content
     assert "<?xml " in content
+    assert "<href>/bags</href>" in content # XXX: is this necessary/desirable?
     assert "<href>/bags/alpha</href>" in content
     assert "<href>/bags/bravo</href>" in content
 
@@ -63,6 +65,7 @@ def test_directory_listing():
     assert response["status"] == "207", content
     assert response["content-type"] == "application/xml", content
     assert "<?xml " in content
+    assert "<href>/recipes</href>" in content # XXX: is this necessary/desirable?
     assert "<href>/recipes/omega</href>" in content
 
 
