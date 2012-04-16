@@ -49,7 +49,6 @@ def list_collection(environ, start_response):
     if environ.get("HTTP_DEPTH", "0") not in ("0", "1"):
         raise HTTP403("excessive depth requested")
 
-
     doc = {
         "multistatus": {
             "@xmlns": "DAV:",
@@ -84,7 +83,7 @@ def determine_entries(environ):
     }
     # TODO: prepend server_prefix
 
-    descendants = list(descendant_candidates[current_route])
+    descendants = descendant_candidates[current_route]
     return chain([current_uri], descendants)
 
 
