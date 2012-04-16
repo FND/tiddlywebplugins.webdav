@@ -8,7 +8,7 @@ from itertools import chain
 from collections import OrderedDict
 
 from tiddlyweb.web.http import HTTP403
-from tiddlywebplugins.utils import replace_handler
+from tiddlywebplugins.utils import replace_handler, get_store
 
 from .util import dict2xml, rfc1123Time, merge
 
@@ -76,10 +76,11 @@ def determine_entries(environ):
     current_uri = environ["SCRIPT_NAME"] # XXX: don't we want PATH_INFO?
     current_route = environ["selector.matches"][0]
 
+    store = get_store(environ["tiddlyweb.config"])
     descendant_candidates = { # XXX: hard-coded; ideally descendants should be determined via HATEOAS-y clues
         "/": ["/bags", "/recipes"],
-        "/bags": ("/bags/%s" % entity for entity in ["default", "alpha"]), # hard-coded samples
-        "/recipes": ("/recipes/%s" % entity for entity in ["default", "omega"]) # hard-coded samples
+        "/bags": ("/bags/%s" % bag.name for bag in store.list_bags()),
+        "/recipes": ("/recipes/%s" % recipe.name for recipe in store.list_recipes())
     }
     # TODO: prepend server_prefix
 

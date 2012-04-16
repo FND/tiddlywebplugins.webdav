@@ -13,8 +13,11 @@ HOST = "http://%s:%s" % (HOSTNAME, PORT)
 
 
 def setup_module(module):
+    from .fixtures import populate_store
+
     module.environ = { "tiddlyweb.config": config }
     config["system_plugins"].append("tiddlywebplugins.webdav")
+    populate_store()
 
     httplib2_intercept.install()
     add_wsgi_intercept(HOSTNAME, PORT, _app)
@@ -53,14 +56,13 @@ def test_directory_listing():
     assert response["status"] == "207", content
     assert response["content-type"] == "application/xml", content
     assert "<?xml " in content
-    assert "<href>/bags/default</href>" in content
     assert "<href>/bags/alpha</href>" in content
+    assert "<href>/bags/bravo</href>" in content
 
     response, content = client.request("%s/recipes" % HOST, "PROPFIND")
     assert response["status"] == "207", content
     assert response["content-type"] == "application/xml", content
     assert "<?xml " in content
-    assert "<href>/recipes/default</href>" in content
     assert "<href>/recipes/omega</href>" in content
 
 
