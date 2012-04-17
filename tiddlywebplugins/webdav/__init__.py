@@ -12,6 +12,7 @@ from collections import OrderedDict
 from tiddlyweb.web.http import HTTP403
 from tiddlywebplugins.utils import replace_handler, get_store
 
+from .router import Router
 from .util import dict2xml, rfc1123Time, merge
 
 
@@ -76,23 +77,19 @@ def determine_entries(environ):
     returns descendant resources based on the WSGI environment
     """
     current_uri = environ["SCRIPT_NAME"]
-
-    store = get_store(environ["tiddlyweb.config"])
-    candidates = { # XXX: hard-coded; ideally descendants should be determined via HATEOAS-y clues
-        "/": ["/bags", "/recipes"],
-        "/bags": ("/bags/%s" % bag.name for bag in store.list_bags()),
-        "/recipes": ("/recipes/%s" % recipe.name for recipe in store.list_recipes())
-    }
-    # TODO: prepend server_prefix
-    candidates = dict((re.escape(key), value) for (key, value) in candidates.items())
-
     config = environ["tiddlyweb.config"]
+    store = get_store(config)
+
+    candidates = { # XXX: hard-coded; ideally descendants should be determined via HATEOAS-y clues
+        "[/]": ["/bags", "/recipes"],
+        "/bags[.{format}]": ("/bags/%s" % bag.name for bag in store.list_bags()),
+        "/recipes[.{format}]": ("/recipes/%s" % recipe.name for recipe in store.list_recipes())
+    }
+
     for regex, supported_methods in config["selector"].mappings:
         if regex.search(current_uri): # matching route
-            pattern = regex.pattern.decode("string-escape")
-            pattern = pattern.replace(r"(\.(?P<format>[^/^.]+))", "") # strip format extensions -- XXX: hacky
-            pattern = pattern[1:-2] # strip `^...?$` wrapper -- XXX: brittle!?
-            pattern = pattern.replace("(", "").replace(")", "") # strip matching parens -- XXX: brittle!?
+            routes = Router(mapfile=config["urls_map"], prefix=config["server_prefix"]).routes # XXX: does not support extensions
+            pattern = routes[regex]
             descendants = candidates[pattern]
             break
 
