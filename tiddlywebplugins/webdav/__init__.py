@@ -16,6 +16,7 @@ from tiddlywebplugins.utils import replace_handler, get_store
 from .router import Router
 from .util import dict2xml, rfc1123Time, merge
 
+routes = None
 
 DEFAULT_HEADERS = {
     "DAV": "1",
@@ -28,9 +29,14 @@ def init(config):
     TiddlyWeb plugin initialization
     """
     if "selector" in config: # system plugin
+        router = Router(mapfile=config["urls_map"], prefix=config["server_prefix"]) # XXX: does not support extensions
         handlers = { "OPTIONS": handshake, "PROPFIND": list_collection }
         for uri in ("/", "/bags", "/recipes", "/bags/.../tiddlers"): # TODO: reuse determine_entries:candidates
             replace_handler(config["selector"], uri, handlers) # XXX: we want to extend, not replace
+            config["selector"].add(uri + "/", **handlers) # XXX: trailing slash required?
+            router.add(uri + "/", **handlers)
+        global routes
+        routes = router.routes
 
 
 def handshake(environ, start_response): # TODO: rename
@@ -89,10 +95,12 @@ def determine_entries(environ):
                 (kwargs["bag_name"], tiddler.title) for tiddler in
                 store.list_bag_tiddlers(Bag(kwargs["bag_name"])))
     }
+    candidates["/bags/"] = candidates["/bags[.{format}]"]
+    candidates["/bags/{bag_name:segment}/tiddlers[.{format}]/"] = candidates["/bags/{bag_name:segment}/tiddlers[.{format}]"]
+
 
     for regex, supported_methods in config["selector"].mappings:
         if regex.search(current_uri): # matching route
-            routes = Router(mapfile=config["urls_map"], prefix=config["server_prefix"]).routes # XXX: does not support extensions
             pattern = routes[regex]
             descendants = candidates[pattern]
             try: # deferred evaluation
