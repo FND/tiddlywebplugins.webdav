@@ -68,6 +68,16 @@ def test_directory_listing():
     assert "<href>/recipes</href>" in content # XXX: is this necessary/desirable?
     assert "<href>/recipes/omega</href>" in content
 
+    bag_name = "alpha"
+    uri = "/bags/%s/tiddlers" % bag_name
+    response, content = client.request(HOST + uri, "PROPFIND")
+    assert response["status"] == "207", content
+    assert response["content-type"] == "application/xml", content
+    assert "<?xml " in content
+    assert "<href>%s</href>" % uri in content # XXX: is this necessary/desirable?
+    assert "<href>%s/foo</href>" % uri in content
+    assert "<href>%s/bar</href>" % uri in content
+
 
 def _app():
     return serve.load_app()

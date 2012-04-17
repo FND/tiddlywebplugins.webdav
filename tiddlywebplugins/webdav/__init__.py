@@ -9,6 +9,7 @@ import re
 from itertools import chain
 from collections import OrderedDict
 
+from tiddlyweb.model.bag import Bag
 from tiddlyweb.web.http import HTTP403
 from tiddlywebplugins.utils import replace_handler, get_store
 
@@ -28,7 +29,7 @@ def init(config):
     """
     if "selector" in config: # system plugin
         handlers = { "OPTIONS": handshake, "PROPFIND": list_collection }
-        for uri in ("/", "/bags", "/recipes"):
+        for uri in ("/", "/bags", "/recipes", "/bags/.../tiddlers"): # TODO: reuse determine_entries:candidates
             replace_handler(config["selector"], uri, handlers) # XXX: we want to extend, not replace
 
 
@@ -83,7 +84,10 @@ def determine_entries(environ):
     candidates = { # XXX: hard-coded; ideally descendants should be determined via HATEOAS-y clues
         "[/]": ["/bags", "/recipes"],
         "/bags[.{format}]": ("/bags/%s" % bag.name for bag in store.list_bags()),
-        "/recipes[.{format}]": ("/recipes/%s" % recipe.name for recipe in store.list_recipes())
+        "/recipes[.{format}]": ("/recipes/%s" % recipe.name for recipe in store.list_recipes()),
+        "/bags/{bag_name:segment}/tiddlers[.{format}]": lambda *args, **kwargs: ("/bags/%s/tiddlers/%s" %
+                (kwargs["bag_name"], tiddler.title) for tiddler in
+                store.list_bag_tiddlers(Bag(kwargs["bag_name"])))
     }
 
     for regex, supported_methods in config["selector"].mappings:
@@ -91,6 +95,10 @@ def determine_entries(environ):
             routes = Router(mapfile=config["urls_map"], prefix=config["server_prefix"]).routes # XXX: does not support extensions
             pattern = routes[regex]
             descendants = candidates[pattern]
+            try: # deferred evaluation
+                descendants = descendants(*environ["wsgiorg.routing_args"][0], **environ["wsgiorg.routing_args"][1])
+            except TypeError:
+                pass
             break
 
     return chain([current_uri], descendants)
