@@ -11,9 +11,11 @@ from collections import OrderedDict
 
 from tiddlyweb.model.bag import Bag
 from tiddlyweb.web.http import HTTP403
+from tiddlyweb.web.query import Query
 from tiddlywebplugins.utils import replace_handler, get_store
 
 from .router import Router
+from .middleware import Slasher
 from .util import dict2xml, rfc1123Time, merge
 
 
@@ -28,6 +30,11 @@ def init(config):
     TiddlyWeb plugin initialization
     """
     if "selector" in config: # system plugin
+        # inject middleware
+        if Slasher not in config["server_request_filters"]: # XXX: unnecessary?
+            index = config["server_request_filters"].index(Query) + 1
+            config["server_request_filters"].insert(index, Slasher)
+        # add/augment URI handlers
         handlers = { "OPTIONS": handshake, "PROPFIND": list_collection }
         for uri in ("/", "/bags", "/recipes", "/bags/.../tiddlers"): # TODO: reuse determine_entries:candidates
             replace_handler(config["selector"], uri, handlers) # XXX: we want to extend, not replace
