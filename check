@@ -1,0 +1,22 @@
+#!/usr/bin/env sh
+
+host="http://0.0.0.0:8080"
+
+kill -TERM `cat .pid`
+sleep 1
+rm tiddlyweb.log
+
+echo "[INFO] launching server"
+twanager server &
+echo $! > .pid
+sleep 1
+
+echo "[INFO] starting client query"
+echo | cadaver "$host/" | grep "WebDAV-enabled"
+echo ls | cadaver -t "$host/"
+
+echo "[INFO] mounting"
+sudo umount /mnt/tmp 2> /dev/null
+sudo mount -t davfs "$host/" /mnt/tmp/
+ls -alh /mnt/tmp/
+sudo touch /mnt/tmp/aaa
