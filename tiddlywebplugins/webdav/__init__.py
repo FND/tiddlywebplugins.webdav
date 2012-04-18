@@ -31,6 +31,36 @@ def init(config):
         handlers = { "OPTIONS": handshake, "PROPFIND": list_collection }
         for uri in ("/", "/bags", "/recipes", "/bags/.../tiddlers"): # TODO: reuse determine_entries:candidates
             replace_handler(config["selector"], uri, handlers) # XXX: we want to extend, not replace
+        for uri in ["/bags", "/recipes", "/bags/{bag_name:segment}/tiddlers"]:
+            config["selector"].add(uri + "/", PROPFIND=redirector(uri))
+
+
+from tiddlyweb.web.http import HTTP302
+class WebDAVRedirect(HTTP302):
+    """302 Found"""
+
+    status = __doc__
+
+    def headers(self):
+        """
+        A 302 requires a location header.
+        """
+        return [('Location', '%s' % self), ('Apply-To-Redirect-Ref', 'T')]
+
+    def output(self):
+        """
+        A 302 _must_ have no output.
+        """
+        return ['']
+
+
+def redirector(uri):
+
+    def handler(environ, start_response):
+        print "redirecting to http://0.0.0.0:8080" + uri
+        raise WebDAVRedirect(uri)
+
+    return handler
 
 
 def handshake(environ, start_response): # TODO: rename
@@ -63,7 +93,7 @@ def list_collection(environ, start_response):
 
     # XXX: DEBUG
     from .util import prettify
-    print "%s\n%s\n%s" % ("=" * 80, prettify(doc, "application/xml"), "-" * 80)
+    print "\n%s\nURI: %s?%s | %s\n%s\n%s" % ("=" * 80, environ["SCRIPT_NAME"], environ["QUERY_STRING"], environ["PATH_INFO"], prettify(doc, "application/xml"), "-" * 80)
 
     headers = merge({}, DEFAULT_HEADERS, {
         "Content-Type": "application/xml", # XXX: charset?
