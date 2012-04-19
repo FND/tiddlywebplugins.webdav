@@ -59,7 +59,7 @@ def list_collection(environ, start_response):
     doc = {
         "multistatus": {
             "@xmlns": "DAV:",
-            "response": (multistatus_response(uri, True) for uri in determine_entries(environ))
+            "response": (multistatus_response(entry) for entry in determine_entries(environ))
         }
     }
     doc = """<?xml version="1.0" encoding="utf-8" ?>\n%s""" % dict2xml(doc)
