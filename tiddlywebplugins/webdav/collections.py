@@ -61,12 +61,12 @@ def multistatus_response(entry):
 
 
 def _bags(store, *routing_args, **routing_kwargs):
-    return (Entry("/bags/%s" % bag.name, True)
+    return (Entry("/bags/%s/tiddlers" % bag.name, True)
             for bag in store.list_bags())
 
 
 def _recipes(store, *routing_args, **routing_kwargs):
-    return (Entry("/recipes/%s" % recipe.name, True)
+    return (Entry("/recipes/%s/tiddlers" % recipe.name, True)
             for recipe in store.list_recipes())
 
 
