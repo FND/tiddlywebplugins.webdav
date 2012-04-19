@@ -13,28 +13,23 @@ def determine_entries(environ):
     """
     returns descendant resources based on the WSGI environment
     """
+    candidates = { # XXX: hard-coded; ideally descendants should be determined via HATEOAS-y clues
+        "[/]": lambda *args: ["/bags", "/recipes"],
+        "/bags[.{format}]": _bags,
+        "/recipes[.{format}]": _recipes,
+        "/bags/{bag_name:segment}/tiddlers[.{format}]": _tiddlers
+    }
+
     current_uri = environ["SCRIPT_NAME"]
     config = environ["tiddlyweb.config"]
     store = get_store(config)
-
-    candidates = { # XXX: hard-coded; ideally descendants should be determined via HATEOAS-y clues
-        "[/]": ["/bags", "/recipes"],
-        "/bags[.{format}]": ("/bags/%s" % bag.name for bag in store.list_bags()),
-        "/recipes[.{format}]": ("/recipes/%s" % recipe.name for recipe in store.list_recipes()),
-        "/bags/{bag_name:segment}/tiddlers[.{format}]": lambda *args, **kwargs: ("/bags/%s/tiddlers/%s" %
-                (kwargs["bag_name"], tiddler.title) for tiddler in
-                store.list_bag_tiddlers(Bag(kwargs["bag_name"])))
-    }
-
     for regex, supported_methods in config["selector"].mappings:
         if regex.search(current_uri): # matching route
             routes = Router(mapfile=config["urls_map"], prefix=config["server_prefix"]).routes # XXX: does not support extensions
             pattern = routes[regex]
             descendants = candidates[pattern]
-            try: # deferred evaluation
-                descendants = descendants(*environ["wsgiorg.routing_args"][0], **environ["wsgiorg.routing_args"][1])
-            except TypeError:
-                pass
+            routing_args = environ["wsgiorg.routing_args"]
+            descendants = descendants(store, *routing_args[0], **routing_args[1])
             break
 
     return chain([current_uri], descendants)
@@ -64,3 +59,18 @@ def multistatus_response(uri, collection=True):
             }
         })
     ])
+
+
+def _bags(store, *routing_args, **routing_kwargs):
+    return ("/bags/%s" % bag.name for bag in store.list_bags())
+
+
+def _recipes(store, *routing_args, **routing_kwargs):
+    return ("/recipes/%s" % recipe.name for recipe in store.list_recipes())
+
+
+def _tiddlers(store, *routing_args, **routing_kwargs):
+    bag_name = routing_kwargs["bag_name"]
+    bag = Bag(bag_name)
+    return ("/bags/%s/tiddlers/%s" % (bag_name, tiddler.title) for tiddler in
+                store.list_bag_tiddlers(bag))
