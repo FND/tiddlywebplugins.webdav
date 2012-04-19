@@ -47,7 +47,7 @@ def handshake(environ, start_response): # TODO: rename
     headers = merge({}, DEFAULT_HEADERS, {
         "Allow": ", ".join(environ["selector.methods"]), # TODO: they say OS X Finder requires LOCK, even if faked
         "Content-Length": "0",
-        "Date": rfc1123Time()
+        "Date": rfc1123Time() # XXX: unnecessary
     })
     start_response("200 OK", headers.items())
     return ""
