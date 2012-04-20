@@ -23,10 +23,11 @@ def determine_entries(environ):
     current_uri = environ["SCRIPT_NAME"]
     config = environ["tiddlyweb.config"]
     store = get_store(config)
-    for regex, supported_methods in config["selector"].mappings:
+    router = Router(mapfile=config["urls_map"], prefix=config["server_prefix"]) # XXX: does not support extensions
+
+    for regex, supported_methods in router.mappings:
         if regex.search(current_uri): # matching route
-            routes = Router(mapfile=config["urls_map"], prefix=config["server_prefix"]).routes # XXX: does not support extensions
-            pattern = routes[regex]
+            pattern = router.routes[regex]
             descendants = candidates[pattern]
             routing_args = environ["wsgiorg.routing_args"]
             descendants = descendants(store, *routing_args[0], **routing_args[1])
