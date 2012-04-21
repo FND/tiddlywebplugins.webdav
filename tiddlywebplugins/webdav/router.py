@@ -2,6 +2,8 @@ from __future__ import absolute_import
 
 from selector import Selector
 
+from .util import _super
+
 
 class Router(Selector):
     """
@@ -21,12 +23,3 @@ class Router(Selector):
         self.routes[regex] = path
 
         return mapping
-
-
-def _super(self):
-    """
-    convenience method for common `super` calls
-
-    this essentially emulates Python 3 behavior
-    """
-    return super(self.__class__, self)

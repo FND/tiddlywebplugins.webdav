@@ -109,3 +109,12 @@ def merge(target, *args):
     for dic in args:
         target.update(dic)
     return target
+
+
+def _super(self):
+    """
+    convenience method for common `super` calls
+
+    this essentially emulates Python 3 behavior
+    """
+    return super(self.__class__, self)
